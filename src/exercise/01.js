@@ -9,6 +9,10 @@ import * as React from 'react'
 
 const Globe = React.lazy(() => import('../globe'))
 
+function loadGlobe() {
+ return import('../globe')
+}
+
 function App() {
   const [showGlobe, setShowGlobe] = React.useState(false)
 
@@ -16,6 +20,8 @@ function App() {
   // with a fallback.
 
 
+  // all that we did here was we added an onMouseEnter and an onFocus to our label, 
+  // which to us, is an indication that the user is going to need this code. 
   return (
     <div
       style={{
@@ -27,7 +33,7 @@ function App() {
         padding: '2rem',
       }}
     >
-      <label style={{marginBottom: '1rem'}}>
+      <label style={{marginBottom: '1rem'}} onMouseEnter={loadGlobe} onFocus={loadGlobe}>
         <input
           type="checkbox"
           checked={showGlobe}
