@@ -2,19 +2,20 @@
 // http://localhost:3000/isolated/exercise/01.js
 
 import * as React from 'react'
-// 💣 remove this import
-import Globe from '../globe'
+
 
 // 🐨 use React.lazy to create a Globe component which uses a dynamic import
 // to get the Globe component from the '../globe' module.
+
+const Globe = React.lazy(() => import('../globe'))
 
 function App() {
   const [showGlobe, setShowGlobe] = React.useState(false)
 
   // 🐨 wrap the code below in a <React.Suspense /> component
   // with a fallback.
-  // 💰 try putting it in a few different places and observe how that
-  // impacts the user experience.
+
+
   return (
     <div
       style={{
@@ -35,13 +36,26 @@ function App() {
         {' show globe'}
       </label>
       <div style={{width: 400, height: 400}}>
+      <React.Suspense fallback={<div>Loading...</div>}>
         {showGlobe ? <Globe /> : null}
+      </React.Suspense>
       </div>
     </div>
   )
 }
-// 🦉 Note that if you're not on the isolated page, then you'll notice that this
-// app actually already has a React.Suspense component higher up in the tree
-// where this component is rendered, so you *could* just rely on that one.
+
+// to make this code split, we added a React.lazy right here instead of a direct import for that globe module. 
+// As a reminder, that globe module has a default export that is a component.
+
+// It's really important that the default export is a component because that's how React knows what to render when 
+// this lazily loaded code is finally loaded. It will only render the default export of the module that we're importing.
+
+// With that in hand, we can now come down here and render that just like it's a regular component. 
+// If it had props, we could pass those props just like normal. It would behave, for all intents and purposes, 
+// as a regular globe container.
+
+// We put a Suspense boundary around this to specify a fallback UI for what we should show while the user's waiting 
+// for that code to load. We're able to lazily load the code for this globe so that users don't have to wait 
+// for that entire globe to show up before they can start interacting with our app.
 
 export default App
