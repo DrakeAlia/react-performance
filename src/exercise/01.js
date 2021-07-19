@@ -7,11 +7,17 @@ import * as React from 'react'
 // 🐨 use React.lazy to create a Globe component which uses a dynamic import
 // to get the Globe component from the '../globe' module.
 
-const Globe = React.lazy(() => import('../globe'))
+// const Globe = React.lazy(() => import('../globe'))
 
-function loadGlobe() {
- return import('../globe')
-}
+// function loadGlobe() {
+//  return import('../globe')
+// }
+
+// We'll come down here to our import statement. We'll say, "Webpack prefetch is true." 
+// We don't need this load globe thing anymore because that's going to just load right away.
+
+// You'll notice that we're loading those resources right here after we've loaded everything else, and we've shown the user this checkbox.
+const Globe = React.lazy(() => import( /* webpackPrefetch: true */ '../globe'))
 
 function App() {
   const [showGlobe, setShowGlobe] = React.useState(false)
@@ -19,9 +25,6 @@ function App() {
   // 🐨 wrap the code below in a <React.Suspense /> component
   // with a fallback.
 
-
-  // all that we did here was we added an onMouseEnter and an onFocus to our label, 
-  // which to us, is an indication that the user is going to need this code. 
   return (
     <div
       style={{
@@ -33,7 +36,7 @@ function App() {
         padding: '2rem',
       }}
     >
-      <label style={{marginBottom: '1rem'}} onMouseEnter={loadGlobe} onFocus={loadGlobe}>
+      <label style={{marginBottom: '1rem'}} >
         <input
           type="checkbox"
           checked={showGlobe}
