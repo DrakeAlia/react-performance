@@ -60,8 +60,8 @@ function App() {
   const forceRerender = useForceRerender()
   const [inputValue, setInputValue] = React.useState('')
 
-  // 🐨 wrap getItems in a call to `React.useMemo`
-  const allItems = getItems(inputValue)
+  // 🐨 wrap getItems in a call to `React.useMemo` (X)
+  const allItems = React.useMemo(() => getItems(inputValue), [inputValue])
   const items = allItems.slice(0, 100)
 
   const {
@@ -108,5 +108,12 @@ function App() {
     </div>
   )
 }
+
+// all that we did here was we pulled up our Performance tab in Chrome DevTools. 
+// We identified some experience that was janky. We recorded a profile here so we could get an idea of what's going on 
+// in our code that may be triggering that slow experience.
+
+// Then, we went into our code and optimized it using use memo, so that we can make that experience much faster, 
+// and it is. We're super happy about this.
 
 export default App
