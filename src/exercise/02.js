@@ -3,8 +3,8 @@
 
 import * as React from 'react'
 import {useCombobox} from '../use-combobox'
-import {getItems} from '../filter-cities'
-import {useForceRerender} from '../utils'
+import {getItems} from '../workerized-filter-cities'
+import {useAsync, useForceRerender} from '../utils'
 
 function Menu({
   items,
@@ -60,8 +60,23 @@ function App() {
   const forceRerender = useForceRerender()
   const [inputValue, setInputValue] = React.useState('')
 
+
+  // What we did here was pretty simple. We took this workerize!./filter-cities that I had in place already. 
+  // We have this workerize Webpack loader. You don't really need to worry about this too much.
+
+  // Mostly, what I want you to learn about this is that you can take some JavaScript that's expensive to run 
+  // and put it on a separate thread, so your main thread is freed up to display things to the user more rapidly.
+  
+  // Right here, we say React useEffect as a side effect to trigger this asynchronous operation. We're going to get the
+  // items with the input value. We are only getting the items when that input value changes. We include our run 
+  // function here, but useAsync is ensuring that this run function is stable.
+  const {data: allItems, run} = useAsync({data: [], status: 'pending'})
+  React.useEffect(() => {
+    run(getItems(inputValue))
+  }, [inputValue, run])
+  
   // 🐨 wrap getItems in a call to `React.useMemo` (X)
-  const allItems = React.useMemo(() => getItems(inputValue), [inputValue])
+  // const allItems = React.useMemo(() => getItems(inputValue), [inputValue])
   const items = allItems.slice(0, 100)
 
   const {
