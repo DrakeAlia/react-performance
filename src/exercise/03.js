@@ -58,7 +58,27 @@ function ListItem({
   )
 }
 // 🐨 Memoize the ListItem here using React.memo (X)
-ListItem = React.memo(ListItem)
+// ListItem = React.memo(ListItem)
+
+// All that we did here was this one function right here. This first part is basically what React 
+// does by default for all these different props that are being passed.
+
+// The second part is adding a little bit of extra based on our specific domain knowledge of how these specific props
+// are being used. In that, we only care about whether this current item is highlighted or not.
+// That's when we want to trigger a re-render.
+ListItem = React.memo(ListItem, (prevProps, nextProps) => {
+  if (prevProps.getItemProps !== nextProps.getItemProps) return false
+  if (prevProps.items !== nextProps.items) return false
+  if (prevProps.index !== nextProps.index) return false
+  if (prevProps.selectedItem !== nextProps.selectedItem) return false
+
+  if (prevProps.highlightedIndex !== nextProps.highlightedIndex) {
+    const wasPrevHighlighted = prevProps.highlightedIndex === prevProps.index
+    const isNowHighlighted = nextProps.highlightedIndex === nextProps.index
+    return wasPrevHighlighted === isNowHighlighted
+  }
+  return true
+})
 
 function App() {
   const forceRerender = useForceRerender()
