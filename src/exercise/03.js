@@ -30,7 +30,8 @@ function Menu({
     </ul>
   )
 }
-// 🐨 Memoize the Menu here using React.memo
+// 🐨 Memoize the Menu here using React.memo (X)
+Menu = React.memo(Menu)
 
 function ListItem({
   getItemProps,
@@ -56,7 +57,8 @@ function ListItem({
     />
   )
 }
-// 🐨 Memoize the ListItem here using React.memo
+// 🐨 Memoize the ListItem here using React.memo (X)
+ListItem = React.memo(ListItem)
 
 function App() {
   const forceRerender = useForceRerender()
@@ -112,6 +114,15 @@ function App() {
     </div>
   )
 }
+
+
+
+// All that we did here was we pulled up the React Profiler. We recorded an experience and identified a bunch of 
+// components that are re-rendering but not necessarily. We took those components. We memoized them with React.memo. 
+// We re-ran the Profiler, and we saw that our React memoization seriously improved this experience, so we're going 
+// to stick with this optimization.
+
+
 
 export default App
 
