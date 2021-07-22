@@ -6,6 +6,15 @@ import {useCombobox} from '../use-combobox'
 import {getItems} from '../workerized-filter-cities'
 import {useAsync, useForceRerender} from '../utils'
 
+// All we did here was we took some calculations that we were performing inside the list item that resulted in DOM 
+// updates. We move them up a little higher in the tree so that we could perform those calculations.
+
+// Then, just pass the values that are primitive values that will trigger real DOM updates when they're changed 
+// and then accepted those as props and used those instead of what we had before.
+
+// That made it so that the default behavior for React.memo is also going to give us an awesome behavior for 
+// the re-rendering of these list items.
+
 function Menu({
   items,
   getMenuProps,
@@ -21,8 +30,8 @@ function Menu({
           getItemProps={getItemProps}
           item={item}
           index={index}
-          selectedItem={selectedItem}
-          highlightedIndex={highlightedIndex}
+          isSelected={selectedItem?.id === item.id}
+          isHighlighted={highlightedIndex === index}
         >
           {item.name}
         </ListItem>
@@ -37,12 +46,10 @@ function ListItem({
   getItemProps,
   item,
   index,
-  selectedItem,
-  highlightedIndex,
+  isSelected,
+  isHighlighted,
   ...props
 }) {
-  const isSelected = selectedItem?.id === item.id
-  const isHighlighted = highlightedIndex === index
   return (
     <li
       {...getItemProps({
@@ -58,7 +65,7 @@ function ListItem({
   )
 }
 // 🐨 Memoize the ListItem here using React.memo (X)
-// ListItem = React.memo(ListItem)
+ListItem = React.memo(ListItem)
 
 // All that we did here was this one function right here. This first part is basically what React 
 // does by default for all these different props that are being passed.
@@ -66,19 +73,19 @@ function ListItem({
 // The second part is adding a little bit of extra based on our specific domain knowledge of how these specific props
 // are being used. In that, we only care about whether this current item is highlighted or not.
 // That's when we want to trigger a re-render.
-ListItem = React.memo(ListItem, (prevProps, nextProps) => {
-  if (prevProps.getItemProps !== nextProps.getItemProps) return false
-  if (prevProps.items !== nextProps.items) return false
-  if (prevProps.index !== nextProps.index) return false
-  if (prevProps.selectedItem !== nextProps.selectedItem) return false
+// ListItem = React.memo(ListItem, (prevProps, nextProps) => {
+//   if (prevProps.getItemProps !== nextProps.getItemProps) return false
+//   if (prevProps.items !== nextProps.items) return false
+//   if (prevProps.index !== nextProps.index) return false
+//   if (prevProps.selectedItem !== nextProps.selectedItem) return false
 
-  if (prevProps.highlightedIndex !== nextProps.highlightedIndex) {
-    const wasPrevHighlighted = prevProps.highlightedIndex === prevProps.index
-    const isNowHighlighted = nextProps.highlightedIndex === nextProps.index
-    return wasPrevHighlighted === isNowHighlighted
-  }
-  return true
-})
+//   if (prevProps.highlightedIndex !== nextProps.highlightedIndex) {
+//     const wasPrevHighlighted = prevProps.highlightedIndex === prevProps.index
+//     const isNowHighlighted = nextProps.highlightedIndex === nextProps.index
+//     return wasPrevHighlighted === isNowHighlighted
+//   }
+//   return true
+// })
 
 function App() {
   const forceRerender = useForceRerender()
