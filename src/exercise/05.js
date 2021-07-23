@@ -38,8 +38,9 @@ function AppProvider({children}) {
     dogName: '',
     grid: initialGrid,
   })
-  // 🐨 memoize this value with React.useMemo
-  const value = [state, dispatch]
+  // 🐨 memoize this value with React.useMemo (X)
+  // dispatch is not required but there is no harm including dispatch because its part of the state dependencies
+  const value = React.useMemo(()=> [state, dispatch], [state, dispatch])
   return (
     <AppStateContext.Provider value={value}>
       {children}
