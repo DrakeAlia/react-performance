@@ -74,7 +74,7 @@ function dogReducer(state, action) {
 
 function DogProvider(props) {
   const [state, dispatch] = React.useReducer(dogReducer, {
-    dogName: ''
+    dogName: '',
   })
   const value = [state, dispatch]
   return <DogContext.Provider value={value} {...props} />
@@ -106,14 +106,19 @@ function Grid() {
 }
 Grid = React.memo(Grid)
 
-function Cell({row, column}) {
-  const state = useAppState()
-  const cell = state.grid[row][column]
-  return <CellImpl cell={cell} row={row} column={column} />
+function withStateSlice(Comp, slice) {
+  const MemoComp = React.memo(Comp)
+  function Wrapper(props, ref) {
+    const state = useAppState()
+    return <MemoComp ref={ref} state={slice(state, props)} {...props} />
+  }
+  Wrapper.displayName = `withStateSlice(${Comp.displayName || Comp.name})`
+  return React.memo(React.forwardRef(Wrapper))
 }
-Cell = React.memo(Cell)
 
-function CellImpl({cell, row, column}) {
+
+
+function Cell({state: cell, row, column}) {
   const dispatch = useAppDispatch()
   const handleClick = () => dispatch({type: 'UPDATE_GRID_CELL', row, column})
   return (
@@ -129,7 +134,7 @@ function CellImpl({cell, row, column}) {
     </button>
   )
 }
-CellImpl = React.memo(CellImpl)
+Cell = withStateSlice(Cell, (state, {row, column}) => state.grid[row][column])
 
 function DogNameInput() {
   const [state, dispatch] = useDogState()
@@ -162,29 +167,27 @@ function App() {
   return (
     <div className="grid-app">
       <button onClick={forceRerender}>force rerender</button>
-        <div>
+      <div>
         <DogProvider>
           <DogNameInput />
-          </DogProvider>
-      <AppProvider>
+        </DogProvider>
+        <AppProvider>
           <Grid />
-      </AppProvider>
-        </div>
+        </AppProvider>
+      </div>
     </div>
   )
 }
 
 export default App
 
+// In review, what we did here is we took that middleman component, and we made it general by making a higher-order 
+// component that generates the middleman component. It accepts a component, memoizes that component, and then 
+// ultimately renders it.
 
-// In review, all that we did here was we noticed that when we profiled this, every single one of these cells is 
-// getting re-rendered, and that can be a little bit expensive. Especially if this cell component was rendering a 
-// lot more of other components and things. We don't want it to re-render unless the slight of the state that they 
-// care about is the thing that actually changed.
-
-// What we did is made a little man in the middle component responsible for consuming all of the app state, 
-// grabbing the part of the state that matters, and forwarding that along to the underlying implementation of this 
-// component. Then, that component can take advantage of memoization.
+// It also accepts a slice function, which it uses to pass the state prop so that this component can accept that 
+// state prop and do whatever it needs to with it. Now, this cell only re-renders when the slice of state it 
+// cares about is changed.
 
 /*
 eslint
