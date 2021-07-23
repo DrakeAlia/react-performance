@@ -12,6 +12,7 @@ import {
 
 const AppStateContext = React.createContext()
 const AppDispatchContext = React.createContext()
+const DogContext = React.createContext()
 
 const initialGrid = Array.from({length: 100}, () =>
   Array.from({length: 100}, () => Math.random() * 100),
@@ -60,6 +61,33 @@ function useAppDispatch() {
   return context
 }
 
+function dogReducer(state, action) {
+  switch (action.type) {
+    case 'TYPED_IN_DOG_INPUT': {
+      return {...state, dogName: action.dogName}
+    }
+    default: {
+      throw new Error(`Unhandled action type: ${action.type}`)
+    }
+  }
+}
+
+function DogProvider(props) {
+  const [state, dispatch] = React.useReducer(dogReducer, {
+    dogName: ''
+  })
+  const value = [state, dispatch]
+  return <DogContext.Provider value={value} {...props} />
+}
+
+function useDogState() {
+  const context = React.useContext(DogContext)
+  if (!context) {
+    throw new Error('useDogState must be used within the DogStateProvider')
+  }
+  return context
+}
+
 function Grid() {
   const dispatch = useAppDispatch()
   const [rows, setRows] = useDebouncedState(50)
@@ -99,11 +127,12 @@ function Cell({row, column}) {
 Cell = React.memo(Cell)
 
 function DogNameInput() {
-  const [dogName, setDogName] = React.useState('')
+  const [state, dispatch] = useDogState()
+  const {dogName} = state
 
   function handleChange(event) {
     const newDogName = event.target.value
-    setDogName(newDogName)
+    dispatch({type: 'TYPED_IN_DOG_INPUT', dogName: newDogName})
   }
 
   return (
@@ -128,30 +157,30 @@ function App() {
   return (
     <div className="grid-app">
       <button onClick={forceRerender}>force rerender</button>
-      <AppProvider>
         <div>
+        <DogProvider>
           <DogNameInput />
+          </DogProvider>
+      <AppProvider>
           <Grid />
-        </div>
       </AppProvider>
+        </div>
     </div>
   )
 }
 
 export default App
 
-// All that we needed to do was think more critically about where we're putting our state. We don't just put 
-// everything in the global app provider. We actually try to push that state as close to where it's used as possible. 
-// We removed it from the Reducer and the app provider. We come down here to our dogName input, and we just use a 
-// regular useState for that.
 
-// One of these things is a lot better than the other. Here we've got a task that took 186 milliseconds. Again, 
-// this is on a 6x slowdown, but now super great. Over here is where we did that same thing, and that keypress was 
-// 78 milliseconds.
+// In review, what we did here was we created a dog context right here. We removed all the dog-related stuff from the 
+// app reducer and the app provider. We created a dogReducer, a dogProvider, and a way for consuming that provider's 
+// value. We updated our dogName input to just consume that.
 
-// On top of the performance implications here, I also really love the maintainability aspect here, whereas before, 
-// if I wanted to see what happens when I dispatch this dogName update, I have to go find the Reducer.
+// Because it's not consuming the upstate, this doesn't need to re-render when the app state updates. Because this 
+// isn't consuming the dogState, this doesn't need to re-render when the dogState updates.
 
+// When it can be logically separated like that, then that's definitely preferable. We can even render our providers 
+// right around where they're going to be used, which has some good performance and maintenance implications as well.
 
 /*
 eslint
