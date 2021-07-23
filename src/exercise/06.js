@@ -109,6 +109,11 @@ Grid = React.memo(Grid)
 function Cell({row, column}) {
   const state = useAppState()
   const cell = state.grid[row][column]
+  return <CellImpl cell={cell} row={row} column={column} />
+}
+Cell = React.memo(Cell)
+
+function CellImpl({cell, row, column}) {
   const dispatch = useAppDispatch()
   const handleClick = () => dispatch({type: 'UPDATE_GRID_CELL', row, column})
   return (
@@ -124,7 +129,7 @@ function Cell({row, column}) {
     </button>
   )
 }
-Cell = React.memo(Cell)
+CellImpl = React.memo(CellImpl)
 
 function DogNameInput() {
   const [state, dispatch] = useDogState()
@@ -172,15 +177,14 @@ function App() {
 export default App
 
 
-// In review, what we did here was we created a dog context right here. We removed all the dog-related stuff from the 
-// app reducer and the app provider. We created a dogReducer, a dogProvider, and a way for consuming that provider's 
-// value. We updated our dogName input to just consume that.
+// In review, all that we did here was we noticed that when we profiled this, every single one of these cells is 
+// getting re-rendered, and that can be a little bit expensive. Especially if this cell component was rendering a 
+// lot more of other components and things. We don't want it to re-render unless the slight of the state that they 
+// care about is the thing that actually changed.
 
-// Because it's not consuming the upstate, this doesn't need to re-render when the app state updates. Because this 
-// isn't consuming the dogState, this doesn't need to re-render when the dogState updates.
-
-// When it can be logically separated like that, then that's definitely preferable. We can even render our providers 
-// right around where they're going to be used, which has some good performance and maintenance implications as well.
+// What we did is made a little man in the middle component responsible for consuming all of the app state, 
+// grabbing the part of the state that matters, and forwarding that along to the underlying implementation of this 
+// component. Then, that component can take advantage of memoization.
 
 /*
 eslint
