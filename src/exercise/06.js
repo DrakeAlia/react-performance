@@ -19,11 +19,6 @@ const initialGrid = Array.from({length: 100}, () =>
 
 function appReducer(state, action) {
   switch (action.type) {
-    // we're no longer managing the dogName state in our reducer
-    // 💣 remove this case
-    case 'TYPED_IN_DOG_INPUT': {
-      return {...state, dogName: action.dogName}
-    }
     case 'UPDATE_GRID_CELL': {
       return {...state, grid: updateGridCellState(state.grid, action)}
     }
@@ -38,8 +33,6 @@ function appReducer(state, action) {
 
 function AppProvider({children}) {
   const [state, dispatch] = React.useReducer(appReducer, {
-    // 💣 remove the dogName state because we're no longer managing that
-    dogName: '',
     grid: initialGrid,
   })
   return (
@@ -106,16 +99,11 @@ function Cell({row, column}) {
 Cell = React.memo(Cell)
 
 function DogNameInput() {
-  // 🐨 replace the useAppState and useAppDispatch with a normal useState here
-  // to manage the dogName locally within this component
-  const state = useAppState()
-  const dispatch = useAppDispatch()
-  const {dogName} = state
+  const [dogName, setDogName] = React.useState('')
 
   function handleChange(event) {
     const newDogName = event.target.value
-    // 🐨 change this to call your state setter that you get from useState
-    dispatch({type: 'TYPED_IN_DOG_INPUT', dogName: newDogName})
+    setDogName(newDogName)
   }
 
   return (
@@ -151,6 +139,19 @@ function App() {
 }
 
 export default App
+
+// All that we needed to do was think more critically about where we're putting our state. We don't just put 
+// everything in the global app provider. We actually try to push that state as close to where it's used as possible. 
+// We removed it from the Reducer and the app provider. We come down here to our dogName input, and we just use a 
+// regular useState for that.
+
+// One of these things is a lot better than the other. Here we've got a task that took 186 milliseconds. Again, 
+// this is on a 6x slowdown, but now super great. Over here is where we did that same thing, and that keypress was 
+// 78 milliseconds.
+
+// On top of the performance implications here, I also really love the maintainability aspect here, whereas before, 
+// if I wanted to see what happens when I dispatch this dogName update, I have to go find the Reducer.
+
 
 /*
 eslint
