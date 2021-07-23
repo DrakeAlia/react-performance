@@ -1,5 +1,6 @@
-// Fix "perf death by a thousand cuts"
-// http://localhost:3000/isolated/exercise/06.js
+// Starting point for the Recoil Extra Credit
+// 💯 use recoil (exercise)
+// http://localhost:3000/isolated/exercise/06.extra-4.js
 
 import * as React from 'react'
 import {
@@ -9,22 +10,35 @@ import {
   updateGridState,
   updateGridCellState,
 } from '../utils'
+import {RecoilRoot, useRecoilState, useRecoilCallback, atomFamily} from 'recoil'
 
 const AppStateContext = React.createContext()
-const AppDispatchContext = React.createContext()
-const DogContext = React.createContext()
 
 const initialGrid = Array.from({length: 100}, () =>
   Array.from({length: 100}, () => Math.random() * 100),
 )
 
+const cellAtoms = atomFamily({
+  key: 'cells',
+  default: ({row, column}) => initialGrid[row][column],
+})
+
+function useUpdateGrid() {
+  return useRecoilCallback(({set}) => ({rows, columns}) => {
+    for (let row = 0; row < rows; row++) {
+      for (let column = 0; column < columns; column++) {
+        if (Math.random() > 0.7) {
+          set(cellAtoms({row, column}), Math.random() * 100)
+        }
+      }
+    }
+  })
+}
+
 function appReducer(state, action) {
   switch (action.type) {
-    case 'UPDATE_GRID_CELL': {
-      return {...state, grid: updateGridCellState(state.grid, action)}
-    }
-    case 'UPDATE_GRID': {
-      return {...state, grid: updateGridState(state.grid)}
+    case 'TYPED_IN_DOG_INPUT': {
+      return {...state, dogName: action.dogName}
     }
     default: {
       throw new Error(`Unhandled action type: ${action.type}`)
@@ -34,13 +48,13 @@ function appReducer(state, action) {
 
 function AppProvider({children}) {
   const [state, dispatch] = React.useReducer(appReducer, {
-    grid: initialGrid,
+    dogName: '',
   })
+  // 🦉 notice that we don't even need to bother memoizing this value
+  const value = [state, dispatch]
   return (
-    <AppStateContext.Provider value={state}>
-      <AppDispatchContext.Provider value={dispatch}>
-        {children}
-      </AppDispatchContext.Provider>
+    <AppStateContext.Provider value={value}>
+      {children}
     </AppStateContext.Provider>
   )
 }
@@ -53,46 +67,11 @@ function useAppState() {
   return context
 }
 
-function useAppDispatch() {
-  const context = React.useContext(AppDispatchContext)
-  if (!context) {
-    throw new Error('useAppDispatch must be used within the AppProvider')
-  }
-  return context
-}
-
-function dogReducer(state, action) {
-  switch (action.type) {
-    case 'TYPED_IN_DOG_INPUT': {
-      return {...state, dogName: action.dogName}
-    }
-    default: {
-      throw new Error(`Unhandled action type: ${action.type}`)
-    }
-  }
-}
-
-function DogProvider(props) {
-  const [state, dispatch] = React.useReducer(dogReducer, {
-    dogName: '',
-  })
-  const value = [state, dispatch]
-  return <DogContext.Provider value={value} {...props} />
-}
-
-function useDogState() {
-  const context = React.useContext(DogContext)
-  if (!context) {
-    throw new Error('useDogState must be used within the DogStateProvider')
-  }
-  return context
-}
-
 function Grid() {
-  const dispatch = useAppDispatch()
+  const updateGrid = useUpdateGrid()
   const [rows, setRows] = useDebouncedState(50)
   const [columns, setColumns] = useDebouncedState(50)
-  const updateGridData = () => dispatch({type: 'UPDATE_GRID'})
+  const updateGridData = () => updateGrid({rows, columns})
   return (
     <AppGrid
       onUpdateGrid={updateGridData}
@@ -104,23 +83,11 @@ function Grid() {
     />
   )
 }
-Grid = React.memo(Grid)
 
-function withStateSlice(Comp, slice) {
-  const MemoComp = React.memo(Comp)
-  function Wrapper(props, ref) {
-    const state = useAppState()
-    return <MemoComp ref={ref} state={slice(state, props)} {...props} />
-  }
-  Wrapper.displayName = `withStateSlice(${Comp.displayName || Comp.name})`
-  return React.memo(React.forwardRef(Wrapper))
-}
+function Cell({row, column}) {
+  const [cell, setCell] = useRecoilState(cellAtoms({row, column}))
+  const handleClick = () => setCell(Math.random() * 100)
 
-
-
-function Cell({state: cell, row, column}) {
-  const dispatch = useAppDispatch()
-  const handleClick = () => dispatch({type: 'UPDATE_GRID_CELL', row, column})
   return (
     <button
       className="cell"
@@ -134,10 +101,9 @@ function Cell({state: cell, row, column}) {
     </button>
   )
 }
-Cell = withStateSlice(Cell, (state, {row, column}) => state.grid[row][column])
 
 function DogNameInput() {
-  const [state, dispatch] = useDogState()
+  const [state, dispatch] = useAppState()
   const {dogName} = state
 
   function handleChange(event) {
@@ -167,27 +133,29 @@ function App() {
   return (
     <div className="grid-app">
       <button onClick={forceRerender}>force rerender</button>
-      <div>
-        <DogProvider>
-          <DogNameInput />
-        </DogProvider>
+      <RecoilRoot>
         <AppProvider>
-          <Grid />
+          <div>
+            <DogNameInput />
+            <Grid />
+          </div>
         </AppProvider>
-      </div>
+      </RecoilRoot>
     </div>
   )
 }
 
 export default App
 
-// In review, what we did here is we took that middleman component, and we made it general by making a higher-order 
-// component that generates the middleman component. It accepts a component, memoizes that component, and then 
-// ultimately renders it.
 
-// It also accepts a slice function, which it uses to pass the state prop so that this component can accept that 
-// state prop and do whatever it needs to with it. Now, this cell only re-renders when the slice of state it 
-// cares about is changed.
+// In review, what we did here was we brought in recoil. We created our cell atoms here. We have a mechanism for 
+// updating all of the atoms. We created a mechanism for us to update all of those cell atoms when the user clicks on 
+// updateGrid data. Then we updated our app provider and its reducer to not have that state anymore because it's 
+// being handled by recoil.
+
+// We updated our grid to reference that updateGrid hook. Then in our cell, we're using recoil state, grabbing the 
+// atom of the state that we care about, which gives us a cell and a mechanism for updating that cell. We have a much 
+// faster experience for when the user clicks on one of these cells.
 
 /*
 eslint
